@@ -1,6 +1,5 @@
 const express = require('express');
-const { alumnos, Alumno } = require('./alumno.js');
-
+const db = require('./database/db.js');
 
 
 const app = express();
@@ -14,52 +13,99 @@ app.get('/', (req, res) => {
   res.send('Hello, World!');
 });
 
-app.get('/api/alumnos', (req, res) => {
-  res.json({ message: 'Lista de alumnos', alumnos });
-});
+app.get('/api/alumnos', async (req, res) => {
+  try {
+    const [results] = await db.query('SELECT * FROM alumnos');
 
-app.get('/api/alumnos/:id', (req, res) => {
-  const { id } = req.params;
-  const alumno = alumnos.find(a => a.id === parseInt(id));
-  if (!alumno) {
-    return res.status(404).json({ message: 'Alumno no encontrado' });
+    return res.status(200).json({
+      message: 'Consulta exitosa',
+      results
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: 'Error al consultar'
+    });
   }
-  res.json({ message: 'Alumno encontrado', alumno });
 });
 
-app.post('/api/alumnos', (req, res) => {
+app.get('/api/alumnos/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await db.query('SELECT * FROM alumnos WHERE id= ?', [id]);
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        message: 'Alumno no encontrado'
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Consulta exitosa',
+      result
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      message: 'Error al consultar'
+    });
+  }
+});
+
+app.post('/api/alumnos', async (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(400).json({ message: 'Bad Request: No se proporcionó un alumno válido' });
   }
   const alumno = req.body;
-  let id = 0;
-  if (alumnos.length === 0) { // si no hay alumnos, asignar id 1
-    id = 1;
-  } else{
-    id = Math.max(...alumnos.map(a => a.id)) + 1; // asignar el siguiente id disponible
+  try {
+
+    const [result] = await db.query("INSERT INTO alumnos (Name, Last_Name, Email, Student_Id) VALUES (?,?,?,?)",
+      [alumno.name, alumno.lastname, alumno.email, alumno.studentid]);
+
+    if (result.affectedRows === 0) {
+      return res.status(500).json({
+        message: 'No se pudo insertar'
+      });
+    }
+    res.status(201).json({ message: 'Creado de forma exitosa', });
+  } catch (err) {
+    return res.status(500).json({
+      message: 'Error al consultar'
+    });
   }
-  alumnos.push(new Alumno(id, alumno.nombre, alumno.apellido, alumno.email, alumno.matricula)); //agregar el nuevo a.
-  res.status(201).json({ message: '201 CREATED', alumno });
 });
 
-app.put('/api/alumnos/:id', (req, res) => {
+app.put('/api/alumnos/:id', async (req, res) => {
   const { id } = req.params;
-  const alumnoAActualizar = req.body;
-  const index = alumnos.findIndex(a => a.id === parseInt(id));
-  if (index === -1) {
-    return res.status(404).json({ message: 'Alumno no encontrado' });
+  const alumno = req.body;
+  try {
+    const [result] = await db.query('UPDATE alumnos SET Name = ?, Last_Name = ?, Email = ?, Student_Id = ? WHERE id = ?',
+       [alumno.name, alumno.lastname, alumno.email, alumno.studentid, id]);
+    if (result.affectedRows===0){
+      return res.status(404).json({ message: 'Alumno no encontrado' });
+    }
+    return res.status(200).json({ message: 'Alumno actualizado' });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error al editar'
+    });
   }
-  alumnos[index] = { ...alumnos[index], ...alumnoAActualizar };
-
-  res.json({ message: `200 OK`, alumnoActualizado: alumnos[index] });
 });
 
-app.delete('/api/alumnos/:id', (req, res) => {
+app.delete('/api/alumnos/:id', async (req, res) => {
   const { id } = req.params;
-  const index = alumnos.findIndex(a => a.id === parseInt(id));
-  if (index === -1) {
-    return res.status(404).json({ message: 'Alumno no encontrado' });
+  try {
+    const [result] = await db.query('DELETE FROM alumnos WHERE id= ? ', [id]);
+    if(result.affectedRows===0){
+      return res.status(404).json({
+      message: 'No se encontró al alumno'
+      });
+    }
+    return res.status(200).json({
+      message: 'Eliminado con éxito'
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error al eliminar'
+    });
   }
-  alumnos.splice(index, 1);
-  res.json({ message: `200 OK`, id });
 });
