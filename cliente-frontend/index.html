@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alumnos</title>
+    <meta name="description" content="Lista de alumnos">
+</head>
+
+<body>
+    <h1>Alumnos</h1>
+
+    <form id="alumno-form">
+        <input type="text" id="campo-studentid" placeholder="Matrícula" maxlength="10" required>
+        <input type="text" id="campo-name" placeholder="Nombre" maxlength="50" required>
+        <input type="text" id="campo-lastname" placeholder="Apellido" maxlength="30">
+        <input type="email" id="campo-email" placeholder="Email" maxlength="50">
+        <button type="submit" id="guardar-btn">Agregar</button>
+        <button type="button" id="cancelar-btn" hidden>Cancelar</button>
+    </form>
+
+    <form id="buscar-form">
+        <input type="number" id="buscar-id" placeholder="Buscar por ID" min="1" required>
+        <button type="submit">Buscar</button>
+        <button type="button" id="ver-todos-btn">Ver todos</button>
+    </form>
+
+    <div id="alumnos-container">
+        <table id="alumnos-table">
+            <thead>
+                <tr>
+                    <th>Matrícula</th>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Email</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="alumnos-tbody"></tbody>
+        </table>
+    </div>
+    <div style="max-width: 600px;">
+        <canvas id="alumnos-chart"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>
