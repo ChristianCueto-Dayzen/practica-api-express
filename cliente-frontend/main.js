@@ -95,6 +95,7 @@ function renderizarTabla(alumnos) {
     const fila = document.createElement('tr');
     const celda = document.createElement('td');
     celda.colSpan = 5;
+    celda.className = 'vacio';
     celda.textContent = 'No se encontraron alumnos';
     fila.appendChild(celda);
     tbody.appendChild(fila);
@@ -111,12 +112,15 @@ function renderizarTabla(alumnos) {
     });
 
     const acciones = document.createElement('td');
+    acciones.className = 'acciones';
 
     const editarBtn = document.createElement('button');
+    editarBtn.className = 'btn-secundario';
     editarBtn.textContent = 'Editar';
     editarBtn.addEventListener('click', () => prepararEdicion(alumno));
 
     const eliminarBtn = document.createElement('button');
+    eliminarBtn.className = 'btn-peligro';
     eliminarBtn.textContent = 'Eliminar';
     eliminarBtn.addEventListener('click', () => manejarEliminar(alumno.Id));
 
@@ -127,9 +131,66 @@ function renderizarTabla(alumnos) {
   });
 }
 
+function extraerDatosGrafica(alumnos) {
+  const conteo = {};
+
+  alumnos.forEach((alumno) => {
+    const dominio = alumno.Email && alumno.Email.includes('@')
+      ? alumno.Email.split('@')[1].toLowerCase()
+      : 'Sin email';
+
+    conteo[dominio] = (conteo[dominio] || 0) + 1;
+  });
+
+  return {
+    etiquetas: Object.keys(conteo),
+    valores: Object.values(conteo)
+  };
+}
+
+let grafica = null;
+
+function renderizarGrafica(etiquetas, valores) {
+  if (grafica) {
+    grafica.data.labels = etiquetas;
+    grafica.data.datasets[0].data = valores;
+    grafica.update();
+    return;
+  }
+
+  const canvas = document.getElementById('alumnos-chart');
+
+  grafica = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: etiquetas,
+      datasets: [{
+        label: 'Alumnos',
+        data: valores,
+        backgroundColor: '#2a78d6',
+        borderRadius: 4,
+        maxBarThickness: 48
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: 'Alumnos por dominio de correo' }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, ticks: { precision: 0 } }
+      }
+    }
+  });
+}
+
 async function cargarTabla() {
-  const alumnos = await obtenerAlumnos();
-  renderizarTabla(alumnos || []);
+  const alumnos = await obtenerAlumnos() || [];
+  renderizarTabla(alumnos);
+
+  const { etiquetas, valores } = extraerDatosGrafica(alumnos);
+  renderizarGrafica(etiquetas, valores);
 }
 
 const form = document.getElementById('alumno-form');

@@ -1,0 +1,218 @@
+:root {
+    --fondo: #f9f9f7;
+    --superficie: #ffffff;
+    --texto: #0b0b0b;
+    --texto-secundario: #52514e;
+    --borde: #e1e0d9;
+    --borde-control: #c3c2b7;
+    --primario: #256abf;
+    --primario-hover: #1c5cab;
+    --peligro: #d03b3b;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/* Los botones tienen display propio; sin esto el atributo hidden no los oculta */
+[hidden] {
+    display: none !important;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    background: var(--fondo);
+    color: var(--texto);
+}
+
+.contenedor {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+}
+
+h1 {
+    margin: 0 0 24px;
+    font-size: 1.75rem;
+}
+
+h2 {
+    margin: 0 0 16px;
+    font-size: 1.1rem;
+}
+
+.tarjeta {
+    margin-bottom: 20px;
+    padding: 20px;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+}
+
+/* Formulario de alta y edición */
+#alumno-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+label {
+    font-size: 0.875rem;
+    color: var(--texto-secundario);
+}
+
+input {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 10px;
+    font: inherit;
+    color: inherit;
+    background: var(--superficie);
+    border: 1px solid var(--borde-control);
+    border-radius: 6px;
+}
+
+input:focus-visible {
+    outline: 2px solid var(--primario);
+    outline-offset: 1px;
+    border-color: var(--primario);
+}
+
+.botones {
+    display: flex;
+    gap: 8px;
+    grid-column: 1 / -1;
+}
+
+/* Botones */
+button {
+    padding: 8px 16px;
+    font: inherit;
+    color: #ffffff;
+    background: var(--primario);
+    border: 1px solid var(--primario);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: var(--primario-hover);
+    border-color: var(--primario-hover);
+}
+
+button:focus-visible {
+    outline: 2px solid var(--primario);
+    outline-offset: 2px;
+}
+
+.btn-secundario {
+    color: var(--primario);
+    background: var(--superficie);
+    border-color: var(--borde-control);
+}
+
+.btn-secundario:hover {
+    background: #f0efec;
+    border-color: var(--borde-control);
+}
+
+.btn-peligro {
+    color: var(--peligro);
+    background: var(--superficie);
+    border-color: var(--borde-control);
+}
+
+.btn-peligro:hover {
+    color: #ffffff;
+    background: var(--peligro);
+    border-color: var(--peligro);
+}
+
+/* Listado */
+.encabezado-lista {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.encabezado-lista h2 {
+    margin: 0;
+}
+
+#buscar-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#buscar-id {
+    width: 160px;
+}
+
+#alumnos-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--borde);
+}
+
+th {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--texto-secundario);
+    white-space: nowrap;
+    border-bottom-color: var(--borde-control);
+}
+
+tbody tr:hover {
+    background: var(--fondo);
+}
+
+tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.acciones {
+    white-space: nowrap;
+}
+
+.acciones button {
+    padding: 4px 10px;
+    font-size: 0.875rem;
+}
+
+.acciones button + button {
+    margin-left: 8px;
+}
+
+.vacio {
+    padding: 24px;
+    text-align: center;
+    color: var(--texto-secundario);
+}
+
+/* Gráfica */
+.grafica {
+    max-width: 600px;
+    margin: 0 auto;
+}
