@@ -1,6 +1,33 @@
 const express = require('express');
 const db = require('./database/db.js');
 const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+
+
+//guardar en uploads con la fecha como prefijo para evitar duplicados
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+//storage indica el nombre y la ruta
+//fileFilter indica que solo se aceptan archivos .json y .csv
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    if (extension !== '.json' && extension !== '.csv') {
+      return cb(new Error('Solo se permiten archivos .json o .csv'));
+    }
+    cb(null, true);
+  }
+});
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -108,4 +135,23 @@ app.delete('/api/alumnos/:id', async (req, res) => {
       message: 'Error al eliminar'
     });
   }
+});
+
+app.post('/api/alumnos/upload', upload.single('archivo'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No se recibió ningún archivo en el campo "archivo"' });
+  }
+
+  return res.status(200).json({
+    message: 'Archivo recibido',
+    archivo: req.file.filename
+  });
+});
+
+// Middleware para manejar errores de multer y errores personalizados
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err.message === 'Solo se permiten archivos .json o .csv') {
+    return res.status(400).json({ message: err.message });
+  }
+  next(err);
 });

@@ -2,3 +2,5 @@
 /.postman
 /postman
 .env
+/uploads/*
+!/uploads/.gitkeep
