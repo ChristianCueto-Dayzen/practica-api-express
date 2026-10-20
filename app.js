@@ -3,6 +3,8 @@ const db = require('./database/db.js');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+const csv = require('csv-parser');
 
 
 //guardar en uploads con la fecha como prefijo para evitar duplicados
@@ -137,15 +139,119 @@ app.delete('/api/alumnos/:id', async (req, res) => {
   }
 });
 
-app.post('/api/alumnos/upload', upload.single('archivo'), (req, res) => {
+// Error que se responde al cliente con 400 porque el problema está en el archivo
+class ArchivoInvalidoError extends Error {}
+
+// Algunos editores (como Excel) agregan un BOM al inicio del archivo
+function quitarBOM(texto) {
+  return texto.replace(/^\uFEFF/, '');
+}
+
+async function leerJSON(ruta) {
+  const contenido = await fs.promises.readFile(ruta, 'utf8');
+
+  let datos;
+  try {
+    datos = JSON.parse(quitarBOM(contenido));
+  } catch (err) {
+    throw new ArchivoInvalidoError('El archivo JSON no tiene un formato válido');
+  }
+
+  if (!Array.isArray(datos)) {
+    throw new ArchivoInvalidoError('El archivo JSON debe contener un arreglo de alumnos');
+  }
+  return datos;
+}
+
+function leerCSV(ruta) {
+  return new Promise((resolve, reject) => {
+    const filas = [];
+
+    fs.createReadStream(ruta)
+      .pipe(csv({ mapHeaders: ({ header }) => quitarBOM(header).trim() }))
+      .on('data', (fila) => filas.push(fila))
+      .on('end', () => resolve(filas))
+      .on('error', reject);
+  });
+}
+
+// Convierte cada registro al orden de columnas del INSERT y valida los campos obligatorios
+function prepararFilas(alumnos) {
+  return alumnos.map((alumno, i) => {
+    const limpiar = (valor) => (valor === undefined || valor === null || String(valor).trim() === '')
+      ? null
+      : String(valor).trim();
+
+    const fila = [
+      limpiar(alumno.name),
+      limpiar(alumno.lastname),
+      limpiar(alumno.email),
+      limpiar(alumno.studentid)
+    ];
+
+    if (!fila[0] || !fila[3]) {
+      throw new ArchivoInvalidoError(`Registro ${i + 1}: "name" y "studentid" son obligatorios`);
+    }
+    return fila;
+  });
+}
+
+// Inserta todos los registros en una sola transacción: o entran todos o ninguno
+async function insertarAlumnos(filas) {
+  const conexion = await db.getConnection();
+  try {
+    await conexion.beginTransaction();
+    const [result] = await conexion.query(
+      'INSERT INTO alumnos (Name, Last_Name, Email, Student_Id) VALUES ?',
+      [filas]
+    );
+    await conexion.commit();
+    return result.affectedRows;
+  } catch (err) {
+    await conexion.rollback();
+    throw err;
+  } finally {
+    conexion.release();
+  }
+}
+
+app.post('/api/alumnos/upload', upload.single('archivo'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No se recibió ningún archivo en el campo "archivo"' });
   }
 
-  return res.status(200).json({
-    message: 'Archivo recibido',
-    archivo: req.file.filename
-  });
+  const ruta = req.file.path;
+  const extension = path.extname(req.file.originalname).toLowerCase();
+
+  try {
+    const alumnos = extension === '.json'
+      ? await leerJSON(ruta)
+      : await leerCSV(ruta);
+
+    if (alumnos.length === 0) {
+      return res.status(400).json({ message: 'El archivo no contiene registros' });
+    }
+
+    const filas = prepararFilas(alumnos);
+    const insertados = await insertarAlumnos(filas);
+
+    return res.status(200).json({
+      message: 'Importación exitosa',
+      insertados
+    });
+  } catch (err) {
+    if (err instanceof ArchivoInvalidoError) {
+      return res.status(400).json({ message: err.message });
+    }
+    return res.status(500).json({ message: 'Error al importar los alumnos' });
+  } finally {
+    // El archivo temporal ya se procesó (con o sin éxito), así que se elimina de uploads
+    try {
+      fs.unlinkSync(ruta);
+    } catch (err) {
+      console.error('No se pudo eliminar el archivo temporal:', err.message);
+    }
+  }
 });
 
 // Middleware para manejar errores de multer y errores personalizados
