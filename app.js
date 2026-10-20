@@ -254,6 +254,32 @@ app.post('/api/alumnos/upload', upload.single('archivo'), async (req, res) => {
   }
 });
 
+const FORMATOS_EXPORTACION = ['json', 'csv'];
+
+app.get('/api/alumnos/export/:formato', async (req, res) => {
+  const formato = req.params.formato.toLowerCase();
+
+  if (!FORMATOS_EXPORTACION.includes(formato)) {
+    return res.status(400).json({
+      message: `Formato no válido: usa ${FORMATOS_EXPORTACION.join(' o ')}`
+    });
+  }
+
+  try {
+    const [alumnos] = await db.query('SELECT * FROM alumnos');
+
+    return res.status(200).json({
+      message: `Exportación en formato ${formato}`,
+      total: alumnos.length,
+      alumnos
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: 'Error al exportar los alumnos'
+    });
+  }
+});
+
 // Middleware para manejar errores de multer y errores personalizados
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError || err.message === 'Solo se permiten archivos .json o .csv') {
