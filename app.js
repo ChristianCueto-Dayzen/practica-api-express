@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const csv = require('csv-parser');
+const { Parser } = require('json2csv');
 
 
 //guardar en uploads con la fecha como prefijo para evitar duplicados
@@ -168,7 +169,8 @@ function leerCSV(ruta) {
     const filas = [];
 
     fs.createReadStream(ruta)
-      .pipe(csv({ mapHeaders: ({ header }) => quitarBOM(header).trim() }))
+      // Con BOM, csv-parser no reconoce las comillas del primer encabezado: se quitan a mano
+      .pipe(csv({ mapHeaders: ({ header }) => quitarBOM(header).trim().replace(/^"(.*)"$/, '$1') }))
       .on('data', (fila) => filas.push(fila))
       .on('end', () => resolve(filas))
       .on('error', reject);
@@ -268,11 +270,25 @@ app.get('/api/alumnos/export/:formato', async (req, res) => {
   try {
     const [alumnos] = await db.query('SELECT * FROM alumnos');
 
-    return res.status(200).json({
-      message: `Exportación en formato ${formato}`,
-      total: alumnos.length,
-      alumnos
-    });
+    // Mismos nombres de campo que acepta /upload, para poder volver a importar el archivo
+    const registros = alumnos.map((alumno) => ({
+      id: alumno.Id,
+      name: alumno.Name,
+      lastname: alumno.Last_Name,
+      email: alumno.Email,
+      studentid: alumno.Student_Id
+    }));
+
+    // attachment() hace que el navegador descargue el archivo en lugar de mostrarlo
+    res.attachment(`alumnos.${formato}`);
+
+    if (formato === 'json') {
+      return res.status(200).type('application/json').send(JSON.stringify(registros, null, 2));
+    }
+
+    const parser = new Parser({ fields: ['id', 'name', 'lastname', 'email', 'studentid'] });
+    // El BOM le indica a Excel que el archivo es UTF-8 y así muestra bien los acentos
+    return res.status(200).type('text/csv; charset=utf-8').send('\uFEFF' + parser.parse(registros));
   } catch (err) {
     return res.status(500).json({
       message: 'Error al exportar los alumnos'
