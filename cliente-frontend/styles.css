@@ -216,3 +216,28 @@ tbody tr:last-child td {
     max-width: 600px;
     margin: 0 auto;
 }
+
+/* Paginación */
+.paginacion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--borde);
+}
+
+#pagina-info {
+    font-size: 0.875rem;
+    color: var(--texto-secundario);
+    text-align: center;
+}
+
+button:disabled,
+button:disabled:hover {
+    color: var(--texto-secundario);
+    background: var(--fondo);
+    border-color: var(--borde);
+    cursor: not-allowed;
+}

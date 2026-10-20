@@ -87,7 +87,39 @@ async function eliminarAlumno(id) {
   }
 }
 
-function renderizarTabla(alumnos) {
+const POR_PAGINA = 10;
+let alumnosEnTabla = [];
+let paginaActual = 1;
+
+const paginacion = document.getElementById('paginacion');
+const anteriorBtn = document.getElementById('anterior-btn');
+const siguienteBtn = document.getElementById('siguiente-btn');
+const paginaInfo = document.getElementById('pagina-info');
+
+// Guarda la lista completa y muestra solo la página pedida
+function renderizarTabla(alumnos, pagina = 1) {
+  alumnosEnTabla = alumnos;
+  mostrarPagina(pagina);
+}
+
+function mostrarPagina(pagina) {
+  const totalPaginas = Math.max(1, Math.ceil(alumnosEnTabla.length / POR_PAGINA));
+  // Si se eliminó el último alumno de la última página, se regresa a la anterior
+  paginaActual = Math.min(Math.max(pagina, 1), totalPaginas);
+
+  const inicio = (paginaActual - 1) * POR_PAGINA;
+  dibujarFilas(alumnosEnTabla.slice(inicio, inicio + POR_PAGINA));
+
+  paginacion.hidden = totalPaginas <= 1;
+  paginaInfo.textContent = `Página ${paginaActual} de ${totalPaginas} · ${alumnosEnTabla.length} alumnos`;
+  anteriorBtn.disabled = paginaActual === 1;
+  siguienteBtn.disabled = paginaActual === totalPaginas;
+}
+
+anteriorBtn.addEventListener('click', () => mostrarPagina(paginaActual - 1));
+siguienteBtn.addEventListener('click', () => mostrarPagina(paginaActual + 1));
+
+function dibujarFilas(alumnos) {
   const tbody = document.getElementById('alumnos-tbody');
   tbody.innerHTML = '';
 
@@ -187,7 +219,8 @@ function renderizarGrafica(etiquetas, valores) {
 
 async function cargarTabla() {
   const alumnos = await obtenerAlumnos() || [];
-  renderizarTabla(alumnos);
+  // Conserva la página en la que estaba el usuario al agregar, editar o eliminar
+  renderizarTabla(alumnos, paginaActual);
 
   const { etiquetas, valores } = extraerDatosGrafica(alumnos);
   renderizarGrafica(etiquetas, valores);
@@ -275,6 +308,7 @@ buscarForm.addEventListener('submit', async (event) => {
 
 verTodosBtn.addEventListener('click', async () => {
   buscarForm.reset();
+  paginaActual = 1;
   await cargarTabla();
 });
 
